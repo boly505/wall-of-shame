@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSession } from 'next-auth/react';
 import PostCard from '@/components/gallery/PostCard';
 import PostModal from '@/components/gallery/PostModal';
 import { PostWithCommentCount } from '@/lib/types';
@@ -12,7 +13,10 @@ interface MasonryGridProps {
 
 type LoadState = 'loading' | 'error' | 'db-offline' | 'done';
 
-export default function MasonryGrid({ isAdmin }: MasonryGridProps) {
+export default function MasonryGrid({ isAdmin: propIsAdmin }: MasonryGridProps) {
+  const { data: session } = useSession();
+  const isAdmin = propIsAdmin || session?.user?.role === 'ADMIN';
+
   const [posts, setPosts] = useState<PostWithCommentCount[]>([]);
   const [state, setState] = useState<LoadState>('loading');
   const [errorMsg, setErrorMsg] = useState('');

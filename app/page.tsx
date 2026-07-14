@@ -1,6 +1,4 @@
 import type { Metadata } from 'next';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 import MasonryGrid from '@/components/gallery/MasonryGrid';
 
 export const dynamic = 'force-dynamic';
@@ -11,9 +9,6 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const session = await getServerSession(authOptions);
-  const isAdmin = session?.user.role === 'ADMIN';
-
   return (
     <div style={{ maxWidth: '90rem', margin: '0 auto', padding: '2rem 1.25rem' }}>
       {/* قسم العنوان */}
@@ -61,7 +56,7 @@ export default async function HomePage() {
       </div>
 
       {/* المعرض */}
-      <MasonryGrid isAdmin={isAdmin} />
+      <MasonryGrid />
     </div>
   );
 }
