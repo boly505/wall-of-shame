@@ -1,0 +1,77 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    background-color: #000000;
+    direction: rtl;
+  }
+
+  body {
+    background-color: #000000;
+    color: #c9d1d9;
+    min-height: 100vh;
+    font-family: var(--font-tajawal), 'Segoe UI', Tahoma, sans-serif;
+    direction: rtl;
+    text-align: right;
+  }
+
+  /* Arabic headings use Tajawal */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-tajawal), sans-serif;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: #0a0a0a; }
+  ::-webkit-scrollbar-thumb { background: #222; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #8B0000; }
+
+  ::selection {
+    background: rgba(139, 0, 0, 0.4);
+    color: #fff;
+  }
+}
+
+@layer components {
+  .glass-card {
+    background-color: rgba(17, 17, 17, 0.6);
+    backdrop-filter: blur(8px);
+    border: 1px solid #222222;
+    border-radius: 1rem;
+  }
+
+  .stat-card {
+    background-color: rgba(17, 17, 17, 0.6);
+    backdrop-filter: blur(8px);
+    border: 1px solid #222222;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    text-align: center;
+  }
+
+  .crimson-divider {
+    border: none;
+    height: 1px;
+    background: linear-gradient(to left, transparent, #6b0000, transparent);
+    margin: 1.5rem 0;
+  }
+}
+
+@layer utilities {
+  .glow-crimson {
+    text-shadow: 0 0 20px rgba(139, 0, 0, 0.8);
+  }
+  .rtl-flip {
+    transform: scaleX(-1);
+  }
+}

@@ -1,0 +1,103 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  password     String
+  role         Role      @default(USER)
+  statusLevel  Int       @default(0)
+  isBanned     Boolean   @default(false)
+  timeoutUntil DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  comments Comment[]
+  replies  Reply[]
+  likes    CommentLike[]
+  flags    Flag[]
+
+  @@map("users")
+}
+
+model Post {
+  id        String   @id @default(cuid())
+  imageUrl  String   @db.Text
+  caption   String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  comments Comment[]
+
+  @@map("posts")
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  postId    String
+  userId    String
+  timestamp DateTime @default(now())
+
+  post    Post          @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  replies Reply[]
+  likes   CommentLike[]
+
+  @@map("comments")
+}
+
+model Reply {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  commentId String
+  userId    String
+  timestamp DateTime @default(now())
+
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("replies")
+}
+
+model CommentLike {
+  id        String   @id @default(cuid())
+  commentId String
+  userId    String
+  createdAt DateTime @default(now())
+
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, userId])
+  @@map("comment_likes")
+}
+
+model Flag {
+  id        String   @id @default(cuid())
+  userId    String
+  reason    String   @db.Text
+  flaggedBy String
+  severity  String   @default("WARNING") // WARNING | TIMEOUT | BAN
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("flags")
+}
