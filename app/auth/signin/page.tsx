@@ -21,9 +21,19 @@ function SignInForm() {
     e.preventDefault();
     if (!email.trim() || !password) { setError('يرجى ملء جميع الحقول.'); return; }
     setLoading(true); setError('');
-    const result = await signIn('credentials', { email: email.trim(), password, redirect: false });
-    if (result?.error) { setError(result.error); setLoading(false); }
-    else { router.push(callbackUrl); router.refresh(); }
+    try {
+      const result = await signIn('credentials', { email: email.trim(), password, redirect: false });
+      if (result?.error) {
+        setError(result.error);
+        setLoading(false);
+      } else {
+        router.push(callbackUrl);
+        router.refresh();
+      }
+    } catch (err: any) {
+      setError(err?.message || 'حدث خطأ غير متوقع أثناء تسجيل الدخول.');
+      setLoading(false);
+    }
   };
 
   const inputStyle = {
