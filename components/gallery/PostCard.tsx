@@ -88,7 +88,7 @@ export default function PostCard({ post, isAdmin, onDelete, onOpen }: PostCardPr
         }}
           className="card-overlay"
         >
-          <span style={{ color: '#8B0000', fontSize: '0.65rem', padding: '0.25rem 0.5rem', borderRadius: '0.5rem', letterSpacing: '0.02em', backgroundColor: 'rgba(139,0,0,0.8)', color: 'white', fontFamily: 'var(--font-tajawal), sans-serif' }}>
+          <span style={{ fontSize: '0.65rem', padding: '0.25rem 0.5rem', borderRadius: '0.5rem', letterSpacing: '0.02em', backgroundColor: 'rgba(139,0,0,0.8)', color: 'white', fontFamily: 'var(--font-tajawal), sans-serif' }}>
             اضغط للفتح
           </span>
         </div>
