@@ -1,4 +1,7 @@
 import { Metadata } from 'next';
+import { redirect } from 'next/navigation';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
 export const metadata: Metadata = { title: 'Admin Dashboard — Wall of Shame' };
@@ -23,6 +26,15 @@ async function getStats() {
 }
 
 export default async function AdminDashboard() {
+  // Server-side auth check — no Edge Runtime issues
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    redirect('/auth/signin?callbackUrl=/admin');
+  }
+  if (session.user.role !== 'ADMIN') {
+    redirect('/?error=unauthorized');
+  }
+
   const stats = await getStats();
 
   const statCards = [
@@ -82,9 +94,6 @@ export default async function AdminDashboard() {
                 textDecoration: 'none',
                 transition: 'border-color 0.2s, background-color 0.2s',
               }}
-              className="action-card"
-              onMouseEnter={e => { e.currentTarget.style.borderColor = '#8B0000'; e.currentTarget.style.backgroundColor = '#222'; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = '#2a2a2a'; e.currentTarget.style.backgroundColor = '#1a1a1a'; }}
             >
               <p style={{ color: '#e57368', fontWeight: 700, fontSize: '0.875rem', margin: '0 0 0.25rem' }}>
                 {action.label}
