@@ -67,7 +67,16 @@ export default function ProfilePage() {
       const form = new FormData();
       form.append('file', file);
       const res = await fetch('/api/upload', { method: 'POST', body: form });
-      if (!res.ok) throw new Error('فشل رفع الصورة');
+      if (!res.ok) {
+        let errStr = 'فشل رفع الصورة';
+        try {
+          const errData = await res.json();
+          errStr = errData.error || errStr;
+        } catch(e) {
+          errStr = await res.text() || errStr;
+        }
+        throw new Error(errStr);
+      }
       const data = await res.json();
       setAvatar(data.url);
     } catch (err: any) {

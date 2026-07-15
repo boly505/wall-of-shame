@@ -21,43 +21,32 @@ interface UserAvatarProps {
 
 const FRAMES: Record<string, React.CSSProperties> = {
   none: {
-    border: '2px solid rgba(255,255,255,0.15)',
+    border: '2px solid rgba(255,255,255,0.1)',
   },
   gold: {
-    border: '2.5px solid transparent',
-    backgroundImage: 'linear-gradient(#111, #111), linear-gradient(135deg, #FFD700, #FFA500, #FFD700)',
-    backgroundOrigin: 'border-box',
-    backgroundClip: 'padding-box, border-box',
-    boxShadow: '0 0 12px rgba(255, 200, 0, 0.6), 0 0 4px rgba(255, 165, 0, 0.4)',
+    border: '3px solid transparent',
+    background: 'linear-gradient(#1a1a1a, #1a1a1a) padding-box, linear-gradient(135deg, #FFD700, #FFA500, #FFD700) border-box',
+    animation: 'pulse-gold 2s infinite alternate',
   },
   red: {
-    border: '2.5px solid transparent',
-    backgroundImage: 'linear-gradient(#111, #111), linear-gradient(135deg, #ff0000, #8B0000, #ff4444)',
-    backgroundOrigin: 'border-box',
-    backgroundClip: 'padding-box, border-box',
-    boxShadow: '0 0 12px rgba(220, 0, 0, 0.7), 0 0 4px rgba(139, 0, 0, 0.5)',
+    border: '3px solid transparent',
+    background: 'linear-gradient(#1a1a1a, #1a1a1a) padding-box, linear-gradient(135deg, #ff0000, #8B0000, #ff4444) border-box',
+    animation: 'pulse-red 2s infinite alternate',
   },
   neon: {
-    border: '2.5px solid transparent',
-    backgroundImage: 'linear-gradient(#111, #111), linear-gradient(135deg, #00ff88, #00bfff, #00ff88)',
-    backgroundOrigin: 'border-box',
-    backgroundClip: 'padding-box, border-box',
-    boxShadow: '0 0 14px rgba(0, 255, 136, 0.6), 0 0 4px rgba(0, 191, 255, 0.4)',
+    border: '3px solid transparent',
+    background: 'linear-gradient(#1a1a1a, #1a1a1a) padding-box, linear-gradient(135deg, #00ff88, #00bfff, #00ff88) border-box',
+    animation: 'pulse-neon 1.5s infinite alternate',
   },
   rainbow: {
-    border: '2.5px solid transparent',
-    backgroundImage: 'linear-gradient(#111, #111), conic-gradient(from 0deg, #ff0000, #ff7700, #ffff00, #00ff00, #0000ff, #8b00ff, #ff0000)',
-    backgroundOrigin: 'border-box',
-    backgroundClip: 'padding-box, border-box',
-    boxShadow: '0 0 14px rgba(255, 100, 255, 0.5)',
+    border: '3px solid transparent',
+    background: 'linear-gradient(#1a1a1a, #1a1a1a) padding-box, conic-gradient(from 0deg, #ff0000, #ff7700, #ffff00, #00ff00, #0000ff, #8b00ff, #ff0000) border-box',
     animation: 'spin-border 3s linear infinite',
   },
   diamond: {
-    border: '2.5px solid transparent',
-    backgroundImage: 'linear-gradient(#111, #111), linear-gradient(135deg, #e0e0e0, #ffffff, #a8c8e8, #ffffff, #e0e0e0)',
-    backgroundOrigin: 'border-box',
-    backgroundClip: 'padding-box, border-box',
-    boxShadow: '0 0 14px rgba(200, 220, 255, 0.6), 0 0 4px rgba(255,255,255,0.3)',
+    border: '3px solid transparent',
+    background: 'linear-gradient(#1a1a1a, #1a1a1a) padding-box, linear-gradient(135deg, #00ffff, #0088ff, #ffffff) border-box',
+    animation: 'pulse-diamond 2s infinite alternate',
   },
 };
 
@@ -65,7 +54,7 @@ export default function UserAvatar({ user, size = 40, showBadge = true, clickabl
   const frameType = user.frameType || 'none';
   const frameStyle = FRAMES[frameType] || FRAMES.none;
   const isAdmin = user.role === 'ADMIN';
-  const badgeSize = Math.max(14, size * 0.3);
+  const badgeSize = Math.max(16, size * 0.35);
 
   const initials = (user.name || user.username || '?')
     .split(' ')
@@ -126,31 +115,57 @@ export default function UserAvatar({ user, size = 40, showBadge = true, clickabl
         <div
           style={{
             position: 'absolute',
-            bottom: -1,
-            right: -1,
+            bottom: -badgeSize * 0.1,
+            right: -badgeSize * 0.1,
             width: badgeSize,
             height: badgeSize,
             borderRadius: '50%',
             background: isAdmin
-              ? 'linear-gradient(135deg, #ff4444, #8B0000)'
-              : 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+              ? 'linear-gradient(135deg, #FFD700, #FFA500)'
+              : 'linear-gradient(135deg, #00c6ff, #0072ff)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            border: '1.5px solid #111',
-            fontSize: badgeSize * 0.55,
+            border: '2px solid #1a1a1a',
+            boxShadow: isAdmin 
+              ? '0 0 12px rgba(255, 215, 0, 0.8)' 
+              : '0 0 12px rgba(0, 198, 255, 0.8)',
             zIndex: 2,
           }}
           title={isAdmin ? 'مدير النظام' : 'موثق'}
         >
-          {isAdmin ? '👑' : '✓'}
+          {isAdmin ? (
+            <svg width={badgeSize * 0.6} height={badgeSize * 0.6} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M2 17L3.2 9L7 12L12 4L17 12L20.8 9L22 17H2Z" fill="#fff" />
+            </svg>
+          ) : (
+            <svg width={badgeSize * 0.6} height={badgeSize * 0.6} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          )}
         </div>
       )}
 
-      {/* Animated rainbow border keyframes */}
+      {/* Global styles for animations */}
       <style>{`
         @keyframes spin-border {
-          to { filter: hue-rotate(360deg); }
+          100% { transform: rotate(360deg); }
+        }
+        @keyframes pulse-gold {
+          0% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.5), inset 0 0 5px rgba(255, 215, 0, 0.3); }
+          100% { box-shadow: 0 0 20px rgba(255, 215, 0, 1), inset 0 0 15px rgba(255, 215, 0, 0.6); }
+        }
+        @keyframes pulse-red {
+          0% { box-shadow: 0 0 10px rgba(255, 0, 0, 0.5), inset 0 0 5px rgba(255, 0, 0, 0.3); }
+          100% { box-shadow: 0 0 20px rgba(255, 0, 0, 1), inset 0 0 15px rgba(255, 0, 0, 0.6); }
+        }
+        @keyframes pulse-neon {
+          0% { box-shadow: 0 0 10px rgba(0, 255, 136, 0.5), inset 0 0 5px rgba(0, 255, 136, 0.3); }
+          100% { box-shadow: 0 0 20px rgba(0, 255, 136, 1), inset 0 0 15px rgba(0, 255, 136, 0.6); }
+        }
+        @keyframes pulse-diamond {
+          0% { box-shadow: 0 0 10px rgba(0, 255, 255, 0.5), inset 0 0 5px rgba(0, 255, 255, 0.3); }
+          100% { box-shadow: 0 0 25px rgba(0, 255, 255, 1), inset 0 0 15px rgba(0, 255, 255, 0.6); }
         }
       `}</style>
     </div>
