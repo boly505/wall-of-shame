@@ -75,11 +75,11 @@ export default function Navbar() {
             <div style={{ width: '1.5rem', height: '1.5rem', border: '2px solid #8B0000', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
           ) : session ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <Link href={`/profile/${session.user.username}`} style={{ textDecoration: 'none' }}>
+              <Link href={`/profile/${session.user.username || session.user.id}`} style={{ textDecoration: 'none' }}>
                 <UserAvatar user={session.user} size={36} clickable={false} />
               </Link>
               <div style={{ textAlign: 'right' }}>
-                <Link href={`/profile/${session.user.username}`} style={{ color: '#e5e7eb', fontSize: '0.875rem', fontWeight: 600, lineHeight: 1.2, textDecoration: 'none' }}>
+                <Link href={`/profile/${session.user.username || session.user.id}`} style={{ color: '#e5e7eb', fontSize: '0.875rem', fontWeight: 600, lineHeight: 1.2, textDecoration: 'none' }}>
                   {session.user.name}
                 </Link>
                 <div>

@@ -156,9 +156,9 @@ export default function UserAvatar({ user, size = 40, showBadge = true, clickabl
     </div>
   );
 
-  if (clickable && user.username) {
+  if (clickable && (user.username || user.id)) {
     return (
-      <Link href={`/profile/${user.username}`} style={{ textDecoration: 'none' }}>
+      <Link href={`/profile/${user.username || user.id}`} style={{ textDecoration: 'none' }}>
         {avatarEl}
       </Link>
     );
