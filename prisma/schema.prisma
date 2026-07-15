@@ -8,6 +8,7 @@ generator client {
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum Role {
@@ -18,33 +19,59 @@ enum Role {
 model User {
   id           String    @id @default(cuid())
   name         String
+  username     String?   @unique @default(cuid())
   email        String    @unique
   password     String
   role         Role      @default(USER)
+  avatar       String?   @db.Text
+  bio          String?   @db.Text
+  isVerified   Boolean   @default(false)
+  frameType    String    @default("none") // none | gold | red | neon | rainbow | diamond
   statusLevel  Int       @default(0)
   isBanned     Boolean   @default(false)
   timeoutUntil DateTime?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  comments Comment[]
-  replies  Reply[]
-  likes    CommentLike[]
-  flags    Flag[]
+  posts            Post[]
+  comments         Comment[]
+  replies          Reply[]
+  likes            CommentLike[]
+  flags            Flag[]
+  postLikes        PostLike[]
+  sentMessages     Message[]    @relation("SentMessages")
+  receivedMessages Message[]    @relation("ReceivedMessages")
 
   @@map("users")
 }
 
 model Post {
   id        String   @id @default(cuid())
-  imageUrl  String   @db.Text
+  imageUrl  String?  @db.Text
   caption   String?  @db.Text
+  content   String?  @db.Text
+  authorId  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  author   User?        @relation(fields: [authorId], references: [id], onDelete: SetNull)
   comments Comment[]
+  likes    PostLike[]
 
   @@map("posts")
+}
+
+model PostLike {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@map("post_likes")
 }
 
 model Comment {
@@ -99,4 +126,18 @@ model Flag {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("flags")
+}
+
+model Message {
+  id         String   @id @default(cuid())
+  content    String   @db.Text
+  senderId   String
+  receiverId String
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  sender   User @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
 }

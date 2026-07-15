@@ -1,4 +1,4 @@
-import { getServerSession } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
 import { NextResponse } from 'next/server';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
@@ -11,7 +11,10 @@ export async function GET(_req: Request, { params }: Params) {
   try {
     const post = await prisma.post.findUnique({
       where: { id },
-      include: { _count: { select: { comments: true } } },
+      include: {
+        author: { select: { id: true, name: true, username: true, avatar: true, isVerified: true, frameType: true, role: true } },
+        _count: { select: { comments: true, likes: true } },
+      },
     });
     if (!post) return NextResponse.json({ success: false, error: 'Post not found.' }, { status: 404 });
     return NextResponse.json({ success: true, data: post });
@@ -40,15 +43,24 @@ export async function PATCH(request: Request, { params }: Params) {
   }
 }
 
-// DELETE /api/posts/[id] — admin only
+// DELETE /api/posts/[id] — admin or post owner
 export async function DELETE(_req: Request, { params }: Params) {
   const { id } = await params;
   const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'ADMIN') {
-    return NextResponse.json({ success: false, error: 'Forbidden.' }, { status: 403 });
+  if (!session) {
+    return NextResponse.json({ success: false, error: 'Unauthorized.' }, { status: 401 });
   }
 
   try {
+    const post = await prisma.post.findUnique({ where: { id }, select: { authorId: true } });
+    if (!post) return NextResponse.json({ success: false, error: 'Not found.' }, { status: 404 });
+
+    const isAdmin = session.user.role === 'ADMIN';
+    const isOwner = post.authorId === session.user.id;
+    if (!isAdmin && !isOwner) {
+      return NextResponse.json({ success: false, error: 'Forbidden.' }, { status: 403 });
+    }
+
     await prisma.post.delete({ where: { id } });
     return NextResponse.json({ success: true, data: { id } });
   } catch {

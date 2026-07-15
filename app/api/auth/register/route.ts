@@ -1,6 +1,4 @@
-import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
-import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 
@@ -22,10 +20,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'An account with this email already exists.' }, { status: 409 });
     }
 
+    // Generate unique default username
+    const baseUsername = name.trim().toLowerCase().replace(/[^a-z0-9_]/g, '') || 'user';
+    const randomSuffix = Math.random().toString(36).slice(2, 7);
+    const username = `${baseUsername}_${randomSuffix}`;
+
     const hashed = await bcrypt.hash(password, 12);
     const user = await prisma.user.create({
-      data: { name, email, password: hashed, role: 'USER' },
-      select: { id: true, name: true, email: true, role: true, createdAt: true },
+      data: {
+        name,
+        email,
+        username,
+        password: hashed,
+        role: 'USER',
+        frameType: 'none',
+        isVerified: false,
+      },
+      select: { id: true, name: true, email: true, username: true, role: true, createdAt: true },
     });
 
     return NextResponse.json({ success: true, data: user }, { status: 201 });

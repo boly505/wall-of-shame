@@ -6,14 +6,19 @@ import Button from '@/components/ui/Button';
 import StatusBadge from '@/components/StatusBadge';
 import Badge from '@/components/ui/Badge';
 import { formatDate } from '@/lib/utils';
+import UserAvatar from '@/components/social/UserAvatar';
 
 type UserRow = {
   id: string;
   name: string;
+  username: string | null;
   email: string;
   role: string;
   statusLevel: number;
   isBanned: boolean;
+  isVerified: boolean;
+  frameType: string;
+  avatar: string | null;
   timeoutUntil: string | null;
   createdAt: string;
   _count: { comments: number; flags: number };
@@ -34,11 +39,15 @@ export default function AdminUsersPage() {
   const [actioning, setActioning] = useState(false);
   const [search, setSearch] = useState('');
 
-  useEffect(() => {
+  const fetchUsers = () => {
     fetch('/api/admin/users')
       .then((r) => r.json())
       .then((j) => j.success && setUsers(j.data))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchUsers();
   }, []);
 
   const runAction = async () => {
@@ -58,17 +67,7 @@ export default function AdminUsersPage() {
       });
       const json = await res.json();
       if (json.success) {
-        if (actionModal.action === 'ban') {
-          setUsers((prev) => prev.map((u) => u.id === actionModal.userId ? { ...u, isBanned: true } : u));
-        } else if (actionModal.action === 'timeout') {
-          setUsers((prev) =>
-            prev.map((u) =>
-              u.id === actionModal.userId
-                ? { ...u, timeoutUntil: new Date(Date.now() + timeoutHours * 3600000).toISOString() }
-                : u
-            )
-          );
-        }
+        fetchUsers();
         setActionModal(null);
         setReason('');
       }
@@ -85,50 +84,87 @@ export default function AdminUsersPage() {
     });
     const json = await res.json();
     if (json.success) {
-      setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, isBanned: false, timeoutUntil: null } : u));
+      fetchUsers();
+    }
+  };
+
+  const toggleVerify = async (userId: string) => {
+    try {
+      const res = await fetch(`/api/admin/users/${userId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'toggle_verify' }),
+      });
+      if (res.ok) fetchUsers();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const setFrame = async (userId: string, frame: string) => {
+    try {
+      const res = await fetch(`/api/admin/users/${userId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'set_frame', frameType: frame }),
+      });
+      if (res.ok) fetchUsers();
+    } catch (e) {
+      console.error(e);
     }
   };
 
   const filteredUsers = users.filter(
     (u) =>
       u.name.toLowerCase().includes(search.toLowerCase()) ||
+      (u.username && u.username.toLowerCase().includes(search.toLowerCase())) ||
       u.email.toLowerCase().includes(search.toLowerCase())
   );
 
   if (loading) {
-    return <div className="flex justify-center py-20"><div className="w-8 h-8 border-2 border-crimson-700 border-t-transparent rounded-full animate-spin" /></div>;
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', padding: '6rem 0' }}>
+        <span style={{ display: 'inline-block', width: '2rem', height: '2rem', border: '3px solid rgba(255,255,255,0.2)', borderTopColor: '#8B0000', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
   }
 
   const actionLabels = {
-    ban: { title: 'Ban User', color: 'bg-red-700', desc: 'This will permanently ban the user from the platform.' },
-    timeout: { title: 'Timeout User', color: 'bg-yellow-700', desc: 'User will be temporarily restricted from posting.' },
-    flag: { title: 'Flag User', color: 'bg-orange-700', desc: 'A warning flag will be added to the moderation log.' },
+    ban: { title: 'حظر العضو', color: 'bg-red-700', desc: 'سيتم حظر المستخدم نهائياً ومنعه من دخول الموقع.' },
+    timeout: { title: 'كتم العضو مؤقتاً', color: 'bg-yellow-700', desc: 'سيتم تقييد المستخدم من التعليق ونشر البوستات مؤقتاً.' },
+    flag: { title: 'تحذير العضو', color: 'bg-orange-700', desc: 'سيتم إرسال تحذير وتدوينه في سجل المستخدم.' },
   };
 
   return (
-    <div>
-      <div className="mb-8 flex items-center justify-between gap-4 flex-wrap">
+    <div style={{ direction: 'rtl', fontFamily: 'var(--font-tajawal), sans-serif' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', gap: '1rem', flexWrap: 'wrap' }}>
         <div>
-          <h1 className="font-display text-2xl font-bold text-silver-500 tracking-wider mb-1">
-            User Roster
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#e5e7eb', margin: '0 0 0.25rem' }}>
+            قائمة الأعضاء
           </h1>
-          <p className="text-silver-900 text-sm">{users.length} members in the Archive</p>
+          <p style={{ color: '#9ca3af', fontSize: '0.85rem', margin: 0 }}>إجمالي الأعضاء المسجلين: {users.length} عضو</p>
         </div>
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search users…"
-          className="bg-obsidian-700 border border-obsidian-500 focus:border-crimson-700 text-silver-700 rounded-xl px-4 py-2 text-sm outline-none w-64 transition-colors"
+          placeholder="ابحث بالاسم أو البريد أو المعرف..."
+          style={{
+            backgroundColor: '#161616', border: '1px solid rgba(255,255,255,0.08)',
+            color: '#e5e7eb', borderRadius: '0.75rem', padding: '0.625rem 1.25rem',
+            fontSize: '0.875rem', outline: 'none', width: '260px',
+            fontFamily: 'var(--font-tajawal), sans-serif', textAlign: 'right', direction: 'rtl',
+          }}
         />
       </div>
 
-      <div className="glass-card overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+      <div className="glass-card" style={{ overflow: 'hidden', borderRadius: '1.25rem', border: '1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem', color: '#d1d5db', textAlign: 'right' }}>
             <thead>
-              <tr className="border-b border-obsidian-600">
-                {['User', 'Status', 'Level', 'Comments', 'Flags', 'Joined', 'Actions'].map((h) => (
-                  <th key={h} className="px-4 py-3 text-left text-xs text-silver-900 uppercase tracking-wider font-medium">
+              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', backgroundColor: 'rgba(255,255,255,0.02)' }}>
+                {['العضو', 'الحالة', 'الرتبة', 'التعليقات', 'التحذيرات', 'التوثيق والديكور', 'الإجراءات الإدارية'].map((h) => (
+                  <th key={h} style={{ padding: '0.875rem 1.25rem', fontSize: '0.8rem', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>
                     {h}
                   </th>
                 ))}
@@ -141,54 +177,101 @@ export default function AdminUsersPage() {
                   <motion.tr
                     key={user.id}
                     layout
-                    className="border-b border-obsidian-700 hover:bg-obsidian-700/40 transition-colors"
+                    style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', backgroundColor: 'transparent' }}
                   >
-                    <td className="px-4 py-3">
+                    <td style={{ padding: '0.75rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <UserAvatar user={user} size={36} clickable={true} />
                       <div>
-                        <p className="text-silver-700 font-medium">{user.name}</p>
-                        <p className="text-obsidian-500 text-xs">{user.email}</p>
+                        <p style={{ color: '#e5e7eb', fontWeight: 700, margin: 0 }}>{user.name}</p>
+                        <p style={{ color: '#6b7280', fontSize: '0.75rem', margin: 0 }}>@{user.username || user.id}</p>
                       </div>
                     </td>
-                    <td className="px-4 py-3">
+                    <td style={{ padding: '0.75rem 1.25rem' }}>
                       {user.isBanned ? (
-                        <Badge variant="red">Banned</Badge>
+                        <Badge variant="red">محظور</Badge>
                       ) : inTimeout ? (
-                        <Badge variant="yellow">Timeout</Badge>
+                        <Badge variant="yellow">مكتوم</Badge>
                       ) : user.role === 'ADMIN' ? (
-                        <Badge variant="crimson">Admin</Badge>
+                        <Badge variant="crimson">أدمن</Badge>
                       ) : (
-                        <Badge variant="green">Active</Badge>
+                        <Badge variant="green">نشط</Badge>
                       )}
                     </td>
-                    <td className="px-4 py-3">
+                    <td style={{ padding: '0.75rem 1.25rem' }}>
                       <StatusBadge statusLevel={user.statusLevel} size="sm" showLevel />
                     </td>
-                    <td className="px-4 py-3 text-silver-900 text-xs">{user._count.comments}</td>
-                    <td className="px-4 py-3">
-                      <span className={user._count.flags > 0 ? 'text-yellow-400 text-xs font-semibold' : 'text-obsidian-500 text-xs'}>
+                    <td style={{ padding: '0.75rem 1.25rem', color: '#9ca3af' }}>{user._count.comments}</td>
+                    <td style={{ padding: '0.75rem 1.25rem' }}>
+                      <span style={{ color: user._count.flags > 0 ? '#ef4444' : '#6b7280', fontWeight: user._count.flags > 0 ? 700 : 400 }}>
                         {user._count.flags}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-obsidian-500 text-xs whitespace-nowrap">
-                      {formatDate(user.createdAt)}
+
+                    {/* Verification and Frame controls */}
+                    <td style={{ padding: '0.75rem 1.25rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        {/* Verify toggle */}
+                        <button
+                          onClick={() => toggleVerify(user.id)}
+                          style={{
+                            backgroundColor: user.isVerified ? 'rgba(59,130,246,0.15)' : '#1e1e1e',
+                            border: `1px solid ${user.isVerified ? 'rgba(59,130,246,0.4)' : 'rgba(255,255,255,0.08)'}`,
+                            color: user.isVerified ? '#3b82f6' : '#9ca3af',
+                            borderRadius: '0.5rem',
+                            padding: '0.25rem 0.5rem',
+                            fontSize: '0.75rem',
+                            cursor: 'pointer',
+                            fontWeight: 700,
+                            fontFamily: 'var(--font-tajawal), sans-serif',
+                          }}
+                        >
+                          {user.isVerified ? '✓ موثق' : 'توثيق'}
+                        </button>
+
+                        {/* Frame dropdown */}
+                        <select
+                          value={user.frameType}
+                          onChange={(e) => setFrame(user.id, e.target.value)}
+                          style={{
+                            backgroundColor: '#111',
+                            border: '1px solid rgba(255,255,255,0.08)',
+                            color: '#e5e7eb',
+                            borderRadius: '0.5rem',
+                            padding: '0.25rem 0.5rem',
+                            fontSize: '0.75rem',
+                            cursor: 'pointer',
+                            fontFamily: 'var(--font-tajawal), sans-serif',
+                            outline: 'none',
+                          }}
+                        >
+                          <option value="none">بدون إطار</option>
+                          <option value="gold">🥇 ذهبي</option>
+                          <option value="red">🔥 أحمر ناري</option>
+                          <option value="neon">⚡ نيون</option>
+                          <option value="rainbow">🌈 قوس قزح</option>
+                          <option value="diamond">💎 ماسي</option>
+                        </select>
+                      </div>
                     </td>
-                    <td className="px-4 py-3">
+
+                    {/* Mod controls */}
+                    <td style={{ padding: '0.75rem 1.25rem' }}>
                       {user.role !== 'ADMIN' && (
-                        <div className="flex gap-1 flex-wrap">
+                        <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
                           {user.isBanned ? (
                             <Button size="sm" variant="outline" onClick={() => unban(user.id)}>
-                              Unban
+                              فك الحظر
                             </Button>
                           ) : (
                             <>
                               <Button size="sm" variant="ghost" onClick={() => setActionModal({ userId: user.id, userName: user.name, action: 'flag' })}>
-                                Flag
+                                تحذير
                               </Button>
                               <Button size="sm" variant="secondary" onClick={() => setActionModal({ userId: user.id, userName: user.name, action: 'timeout' })}>
-                                Timeout
+                                كتم مؤقت
                               </Button>
                               <Button size="sm" variant="danger" onClick={() => setActionModal({ userId: user.id, userName: user.name, action: 'ban' })}>
-                                Ban
+                                حظر دائم
                               </Button>
                             </>
                           )}
@@ -207,58 +290,73 @@ export default function AdminUsersPage() {
       <AnimatePresence>
         {actionModal && (
           <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+            style={{
+              position: 'fixed', inset: 0, zIndex: 50,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              padding: '1rem', backgroundColor: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)',
+            }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className="bg-obsidian-800 border border-crimson-800 rounded-2xl p-6 w-full max-w-md shadow-crimson-lg"
+              style={{
+                backgroundColor: '#1a1a1a', border: '1px solid #3a0000',
+                borderRadius: '1.25rem', padding: '1.5rem', width: '100%', maxWidth: '400px',
+              }}
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9 }}
             >
-              <h3 className="text-silver-500 font-semibold font-display mb-1">
+              <h3 style={{ color: '#e5e7eb', fontSize: '1.1rem', fontWeight: 900, marginBottom: '0.5rem', fontFamily: 'var(--font-tajawal), sans-serif' }}>
                 {actionLabels[actionModal.action].title}
               </h3>
-              <p className="text-silver-900 text-xs mb-1">
-                Target: <strong className="text-crimson-400">{actionModal.userName}</strong>
+              <p style={{ color: '#9ca3af', fontSize: '0.8rem', margin: '0 0 0.5rem' }}>
+                العضو المستهدف: <strong style={{ color: '#ef4444' }}>{actionModal.userName}</strong>
               </p>
-              <p className="text-silver-900 text-xs mb-4 italic">
+              <p style={{ color: '#6b7280', fontSize: '0.75rem', marginBottom: '1.25rem' }}>
                 {actionLabels[actionModal.action].desc}
               </p>
 
               {actionModal.action === 'timeout' && (
-                <div className="mb-4">
-                  <label className="block text-silver-900 text-xs uppercase tracking-wider mb-1.5">Duration (hours)</label>
+                <div style={{ marginBottom: '1rem' }}>
+                  <label style={{ display: 'block', color: '#9ca3af', fontSize: '0.75rem', fontWeight: 600, marginBottom: '0.35rem' }}>مدة الكتم (بالساعات)</label>
                   <input
                     type="number"
                     value={timeoutHours}
                     onChange={(e) => setTimeoutHours(Number(e.target.value))}
                     min={1}
                     max={720}
-                    className="w-full bg-obsidian-700 border border-obsidian-500 text-silver-700 rounded-lg px-3 py-2 text-sm outline-none"
+                    style={{
+                      width: '100%', backgroundColor: '#111', border: '1px solid rgba(255,255,255,0.08)',
+                      borderRadius: '0.5rem', padding: '0.5rem 0.75rem', color: '#e5e7eb', fontSize: '0.875rem',
+                      outline: 'none',
+                    }}
                   />
                 </div>
               )}
 
-              <div className="mb-4">
-                <label className="block text-silver-900 text-xs uppercase tracking-wider mb-1.5">Reason</label>
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label style={{ display: 'block', color: '#9ca3af', fontSize: '0.75rem', fontWeight: 600, marginBottom: '0.35rem' }}>السبب</label>
                 <textarea
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
-                  placeholder="State your reason…"
+                  placeholder="اكتب سبب هذا الإجراء..."
                   rows={3}
-                  className="w-full bg-obsidian-700 border border-obsidian-500 focus:border-crimson-700 text-silver-700 rounded-lg px-3 py-2 text-sm outline-none resize-none"
+                  style={{
+                    width: '100%', backgroundColor: '#111', border: '1px solid rgba(255,255,255,0.08)',
+                    borderRadius: '0.5rem', padding: '0.5rem 0.75rem', color: '#e5e7eb', fontSize: '0.875rem',
+                    outline: 'none', resize: 'none', fontFamily: 'var(--font-tajawal), sans-serif',
+                  }}
                 />
               </div>
 
-              <div className="flex gap-2">
-                <Button variant="danger" className="flex-1" onClick={runAction} loading={actioning}>
-                  Confirm {actionModal.action.charAt(0).toUpperCase() + actionModal.action.slice(1)}
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <Button variant="danger" style={{ flex: 1 }} onClick={runAction} loading={actioning}>
+                  تأكيد الإجراء
                 </Button>
-                <Button variant="ghost" className="flex-1" onClick={() => setActionModal(null)}>
-                  Cancel
+                <Button variant="ghost" style={{ flex: 1 }} onClick={() => setActionModal(null)}>
+                  إلغاء
                 </Button>
               </div>
             </motion.div>

@@ -1,11 +1,11 @@
-import { getServerSession } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
 import { NextResponse } from 'next/server';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
 type Params = { params: Promise<{ id: string }> };
 
-// PATCH /api/admin/users/[id] — ban, timeout, unban, flag
+// PATCH /api/admin/users/[id] — ban, timeout, unban, flag, toggle_verify, set_frame
 export async function PATCH(request: Request, { params }: Params) {
   const { id } = await params;
   const session = await getServerSession(authOptions);
@@ -15,10 +15,10 @@ export async function PATCH(request: Request, { params }: Params) {
 
   try {
     const body = await request.json();
-    const { action, reason, timeoutHours } = body;
-    // action: 'ban' | 'unban' | 'timeout' | 'clear_timeout' | 'flag'
+    const { action, reason, timeoutHours, frameType, isVerified } = body;
+    // action: 'ban' | 'unban' | 'timeout' | 'clear_timeout' | 'flag' | 'toggle_verify' | 'set_frame'
 
-    let updateData: Record<string, unknown> = {};
+    let updateData: Record<string, any> = {};
 
     if (action === 'ban') {
       updateData = { isBanned: true, timeoutUntil: null };
@@ -58,6 +58,12 @@ export async function PATCH(request: Request, { params }: Params) {
         },
       });
       return NextResponse.json({ success: true, data: { flagged: true } });
+    } else if (action === 'toggle_verify') {
+      // Find current verified status
+      const curr = await prisma.user.findUnique({ where: { id }, select: { isVerified: true } });
+      updateData = { isVerified: !curr?.isVerified };
+    } else if (action === 'set_frame') {
+      updateData = { frameType: frameType || 'none' };
     } else {
       return NextResponse.json({ success: false, error: 'Unknown action.' }, { status: 400 });
     }
@@ -65,7 +71,14 @@ export async function PATCH(request: Request, { params }: Params) {
     const user = await prisma.user.update({
       where: { id },
       data: updateData,
-      select: { id: true, name: true, isBanned: true, timeoutUntil: true },
+      select: {
+        id: true,
+        name: true,
+        isBanned: true,
+        timeoutUntil: true,
+        isVerified: true,
+        frameType: true,
+      },
     });
 
     return NextResponse.json({ success: true, data: user });

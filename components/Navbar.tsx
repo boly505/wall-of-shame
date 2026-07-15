@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useSession, signOut } from 'next-auth/react';
 import { getStatusTier } from '@/lib/statusLevel';
+import UserAvatar from './social/UserAvatar';
 
 export default function Navbar() {
   const { data: session, status } = useSession();
@@ -22,7 +23,7 @@ export default function Navbar() {
         justifyContent: 'space-between', direction: 'rtl',
       }}>
 
-        {/* الشعار */}
+        {/* Logo */}
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', textDecoration: 'none' }}>
           <img
             src="/logo.png"
@@ -47,13 +48,20 @@ export default function Navbar() {
           </span>
         </Link>
 
-        {/* روابط الصفحات */}
+        {/* Links */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
           <Link href="/" style={{ color: '#9ca3af', fontSize: '0.875rem', textDecoration: 'none', transition: 'color 0.2s' }}
             onMouseEnter={e => (e.currentTarget.style.color = '#e5e7eb')}
             onMouseLeave={e => (e.currentTarget.style.color = '#9ca3af')}>
-            الأرشيف
+            الرئيسية
           </Link>
+          {session && (
+            <Link href="/chat" style={{ color: '#9ca3af', fontSize: '0.875rem', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.25rem', transition: 'color 0.2s' }}
+              onMouseEnter={e => (e.currentTarget.style.color = '#e5e7eb')}
+              onMouseLeave={e => (e.currentTarget.style.color = '#9ca3af')}>
+              💬 الرسائل
+            </Link>
+          )}
           {session?.user.role === 'ADMIN' && (
             <Link href="/admin" style={{ color: '#e57368', fontSize: '0.875rem', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
               ⚙ لوحة التحكم
@@ -61,24 +69,29 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* قسم المصادقة */}
+        {/* Profile / Auth Section */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
           {status === 'loading' ? (
             <div style={{ width: '1.5rem', height: '1.5rem', border: '2px solid #8B0000', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
           ) : session ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <Link href={`/profile/${session.user.username}`} style={{ textDecoration: 'none' }}>
+                <UserAvatar user={session.user} size={36} clickable={false} />
+              </Link>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ color: '#e5e7eb', fontSize: '0.875rem', fontWeight: 600, lineHeight: 1.2 }}>
+                <Link href={`/profile/${session.user.username}`} style={{ color: '#e5e7eb', fontSize: '0.875rem', fontWeight: 600, lineHeight: 1.2, textDecoration: 'none' }}>
                   {session.user.name}
-                </div>
-                <div style={{
-                  display: 'inline-block',
-                  backgroundColor: '#2d0000', border: '1px solid #4a0000',
-                  color: tier?.color || '#e57368',
-                  fontSize: '0.6rem', padding: '0.1rem 0.5rem',
-                  borderRadius: '9999px', fontWeight: 600,
-                }}>
-                  {tier?.title}
+                </Link>
+                <div>
+                  <div style={{
+                    display: 'inline-block',
+                    backgroundColor: '#2d0000', border: '1px solid #4a0000',
+                    color: tier?.color || '#e57368',
+                    fontSize: '0.55rem', padding: '0.05rem 0.4rem',
+                    borderRadius: '9999px', fontWeight: 600,
+                  }}>
+                    {tier?.title}
+                  </div>
                 </div>
               </div>
               <button
